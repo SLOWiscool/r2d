@@ -4,7 +4,10 @@ export default async function handler(req, res) {
   try {
     const { player, character, game, timestamp, quiz, session, action } = req.body;
 
-const WEBHOOK_URL = "https://discord.com/api/webhooks/1472301642144551056/QxYtAEY68AUjVXxc_v5KnQFvv-3FH0bykL_oTrzWjsfR8MMX_X8YnWI1PblP51ildRXO";
+    const WEBHOOK_URL = "https://discord.com/api/webhooks/1472301642144551056/QxYtAEY68AUjVXxc_v5KnQFvv-3FH0bykL_oTrzWjsfR8MMX_X8YnWI1PblP51ildRXO";
+
+    if (!WEBHOOK_URL) return res.status(500).json({ error: "Webhook not set" });
+
     // Embed color: green = pass, red = fail
     const color = quiz.passed ? 0x57F287 : 0xED4245;
 
@@ -68,15 +71,23 @@ const WEBHOOK_URL = "https://discord.com/api/webhooks/1472301642144551056/QxYtAE
       footer: { text: "Made by Vortex" }
     };
 
-    await fetch(WEBHOOK_URL, {
+    // Send to Discord
+    const discordRes = await fetch(WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] })
+      body: JSON.stringify({ embeds: [embed] }) // MUST be embeds array
     });
 
+    if (!discordRes.ok) {
+      const text = await discordRes.text();
+      console.log("Discord rejected:", text);
+      return res.status(500).json({ ok: false, discordError: text });
+    }
+
     return res.status(200).json({ ok: true });
+
   } catch (err) {
-    console.log(err);
+    console.log("Server error:", err);
     return res.status(500).json({ ok: false, error: err.message });
   }
 }
